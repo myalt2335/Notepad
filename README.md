@@ -28,7 +28,7 @@ This is a simple Notepad-like text editor built from scratch using C++ and the W
 3. Build the executable by running the following commands:
     ```bash
     windres resource.rc -o resource.o
-    g++ -g main.cpp resource.o -o notepad_clone.exe -mwindows -luser32 -lgdi32 -lcomdlg32 -static-libgcc -static-libstdc++
+    g++ -g main.cpp resource.o -o notepad.exe -mwindows -luser32 -lgdi32 -lcomdlg32 -static-libgcc -static-libstdc++
     ```
 
 4. After building, the application will be created and you can simply run the executable by clicking on it.
