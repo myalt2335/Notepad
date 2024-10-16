@@ -19,7 +19,7 @@ This is a simple Notepad-like text editor built from scratch using C++ and the W
 
 1. Clone this repository:
     ```bash
-    git clone https://github.com/your-username/notepad-clone.git
+    git clone https://github.com/myalt2335/Notepad.git
     cd notepad-clone
     ```
 
