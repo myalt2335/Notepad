@@ -31,10 +31,7 @@ This is a simple Notepad-like text editor built from scratch using C++ and the W
     g++ -g main.cpp resource.o -o notepad_clone.exe -mwindows -luser32 -lgdi32 -lcomdlg32 -static-libgcc -static-libstdc++
     ```
 
-4. After building, run the executable:
-    ```bash
-    ./notepad_clone.exe
-    ```
+4. After building, the application will be created and you can simply run the executable by clicking on it.
 
 ### VS Code Configuration
 
