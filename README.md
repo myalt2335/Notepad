@@ -33,10 +33,6 @@ This is a simple Notepad-like text editor built from scratch using C++ and the W
 
 4. After building, the application will be created and you can simply run the executable by clicking on it.
 
-### VS Code Configuration
-
-If you're using **VS Code**, the `.vscode` folder contains pre-configured settings and tasks for building the project.
-
 ## License
 
 This project is currently unlicensed
