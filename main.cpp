@@ -1,3 +1,4 @@
+// v1.2.2
 #include <windows.h>
 #include <commdlg.h>
 #include <fstream>
@@ -32,10 +33,18 @@ void OpenFile(HWND hwnd) {
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
     if (GetOpenFileNameW(&ofn)) {
-        std::ifstream file(ofn.lpstrFile);
+        std::ifstream file(ofn.lpstrFile, std::ios::binary);
         if (file.is_open()) {
             std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-            SetWindowTextW(hwndEdit, StringToWString(content).c_str());
+            file.close();
+
+            std::wstring wContent = StringToWString(content);
+            SetWindowTextW(hwndEdit, wContent.c_str());
+
+            int tabWidth = 4 * 4;
+            SendMessage(hwndEdit, EM_SETTABSTOPS, 1, (LPARAM)&tabWidth);
+        } else {
+            MessageBoxW(hwnd, L"Failed to open the file.", L"Error", MB_OK | MB_ICONERROR);
         }
     }
 }
@@ -116,43 +125,43 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
         case WM_CREATE: {
-    HMENU hMenu = CreateMenu();
-    HMENU hFileMenu = CreateMenu();
-    HMENU hEditMenu = CreateMenu();
+            HMENU hMenu = CreateMenu();
+            HMENU hFileMenu = CreateMenu();
+            HMENU hEditMenu = CreateMenu();
 
-    AppendMenuW(hFileMenu, MF_STRING, 1, L"New");
-    AppendMenuW(hFileMenu, MF_STRING, 2, L"Open");
-    AppendMenuW(hFileMenu, MF_STRING, 3, L"Save");
-    AppendMenuW(hFileMenu, MF_SEPARATOR, 0, NULL);
-    AppendMenuW(hFileMenu, MF_STRING, 4, L"Exit");
+            AppendMenuW(hFileMenu, MF_STRING, 1, L"New");
+            AppendMenuW(hFileMenu, MF_STRING, 2, L"Open");
+            AppendMenuW(hFileMenu, MF_STRING, 3, L"Save");
+            AppendMenuW(hFileMenu, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hFileMenu, MF_STRING, 4, L"Exit");
 
-    AppendMenuW(hEditMenu, MF_STRING, 5, L"Undo");
-    AppendMenuW(hEditMenu, MF_STRING, 6, L"Cut");
-    AppendMenuW(hEditMenu, MF_STRING, 7, L"Copy");
-    AppendMenuW(hEditMenu, MF_STRING, 8, L"Paste");
+            AppendMenuW(hEditMenu, MF_STRING, 5, L"Undo");
+            AppendMenuW(hEditMenu, MF_STRING, 6, L"Cut");
+            AppendMenuW(hEditMenu, MF_STRING, 7, L"Copy");
+            AppendMenuW(hEditMenu, MF_STRING, 8, L"Paste");
 
-    AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hFileMenu, L"File");
-    AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hEditMenu, L"Edit");
+            AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hFileMenu, L"File");
+            AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hEditMenu, L"Edit");
 
-    SetMenu(hwnd, hMenu);
+            SetMenu(hwnd, hMenu);
 
-    hwndEdit = CreateWindowExW(
-        0, L"EDIT", L"",
-        WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN,
-        0, 0, CW_USEDEFAULT, CW_USEDEFAULT,
-        hwnd, (HMENU)101, GetModuleHandle(NULL), NULL
-    );
+            hwndEdit = CreateWindowExW(
+                0, L"EDIT", L"",
+                WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN,
+                0, 0, CW_USEDEFAULT, CW_USEDEFAULT,
+                hwnd, (HMENU)101, GetModuleHandle(NULL), NULL
+            );
 
-    HFONT hFont = CreateFontW(
-        -MulDiv(11, GetDeviceCaps(GetDC(hwnd), LOGPIXELSY), 72), 0, 0, 0, FW_NORMAL, 
-        FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, 
-        CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_MODERN | FIXED_PITCH, L"Consolas"
-    );
-    SendMessage(hwndEdit, WM_SETFONT, (WPARAM)hFont, TRUE);
+            HFONT hFont = CreateFontW(
+                -MulDiv(11, GetDeviceCaps(GetDC(hwnd), LOGPIXELSY), 72), 0, 0, 0, FW_NORMAL, 
+                FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, 
+                CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_MODERN | FIXED_PITCH, L"Consolas"
+            );
+            SendMessage(hwndEdit, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-    originalEditProc = (WNDPROC)SetWindowLongPtr(hwndEdit, GWLP_WNDPROC, (LONG_PTR)EditProc);
-}
-break;
+            originalEditProc = (WNDPROC)SetWindowLongPtr(hwndEdit, GWLP_WNDPROC, (LONG_PTR)EditProc);
+        }
+        break;
 
         case WM_SIZE: {
             RECT rcClient;
