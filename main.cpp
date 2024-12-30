@@ -1,19 +1,27 @@
-// v1.2.2
+// v1.2.4
 #include <windows.h>
 #include <commdlg.h>
 #include <fstream>
 #include <string>
+#include <shlwapi.h>
 #include "resource.h"
 
 const wchar_t* CLASS_NAME = L"Notepad";
 HWND hwndEdit;
 WNDPROC originalEditProc;
+std::wstring currentFileName = L"Untitled";
+bool isModified = false;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 std::wstring StringToWString(const std::string& str) {
     return std::wstring(str.begin(), str.end());
+}
+
+void UpdateWindowTitle(HWND hwnd) {
+    std::wstring title = (isModified ? L"*" : L"") + currentFileName + L" - Notepad";
+    SetWindowTextW(hwnd, title.c_str());
 }
 
 void OpenFile(HWND hwnd) {
@@ -40,6 +48,10 @@ void OpenFile(HWND hwnd) {
 
             std::wstring wContent = StringToWString(content);
             SetWindowTextW(hwndEdit, wContent.c_str());
+
+            currentFileName = PathFindFileNameW(ofn.lpstrFile);
+            isModified = false;
+            UpdateWindowTitle(hwnd);
 
             int tabWidth = 4 * 4;
             SendMessage(hwndEdit, EM_SETTABSTOPS, 1, (LPARAM)&tabWidth);
@@ -80,8 +92,24 @@ void SaveFile(HWND hwnd, HWND hwndEdit) {
         std::wofstream file(filePath.c_str());
         if (file.is_open()) {
             file.write(buffer, len - 1);
+            file.close();
+
+            currentFileName = PathFindFileNameW(filePath.c_str());
+            isModified = false;
+            UpdateWindowTitle(hwnd);
         }
         delete[] buffer;
+    }
+}
+
+void CheckUnsavedChanges(HWND hwnd) {
+    if (isModified) {
+        int result = MessageBoxW(hwnd, L"You have unsaved changes. Do you want to save them?", L"Warning", MB_YESNOCANCEL | MB_ICONWARNING);
+        if (result == IDYES) {
+            SaveFile(hwnd, hwndEdit);
+        } else if (result == IDCANCEL) {
+            return;
+        }
     }
 }
 
@@ -112,6 +140,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     }
 
     ShowWindow(hwnd, nCmdShow);
+    UpdateWindowTitle(hwnd);
 
     MSG msg = {};
     while (GetMessage(&msg, NULL, 0, 0)) {
@@ -173,15 +202,21 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         case WM_COMMAND: {
             switch (LOWORD(wParam)) {
                 case 1: // New
+                    CheckUnsavedChanges(hwnd);
                     SetWindowTextW(hwndEdit, L"");
+                    currentFileName = L"Untitled";
+                    isModified = false;
+                    UpdateWindowTitle(hwnd);
                     break;
                 case 2: // Open
+                    CheckUnsavedChanges(hwnd);
                     OpenFile(hwnd);
                     break;
                 case 3: // Save
                     SaveFile(hwnd, hwndEdit);
                     break;
                 case 4: // Exit
+                    CheckUnsavedChanges(hwnd);
                     PostQuitMessage(0);
                     break;
                 case 5: // Undo
@@ -214,8 +249,14 @@ LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
                 case 'A':
                     SendMessage(hwnd, EM_SETSEL, 0, -1);
                     return 0;
+                case 'S':
+                    SaveFile(GetParent(hwnd), hwnd);
+                    return 0;
             }
         }
+    } else if (uMsg == WM_CHAR || uMsg == WM_PASTE) {
+        isModified = true;
+        UpdateWindowTitle(GetParent(hwnd));
     }
     return CallWindowProc(originalEditProc, hwnd, uMsg, wParam, lParam);
 }
