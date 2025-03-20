@@ -36,4 +36,4 @@ This is a simple Notepad-like text editor built from scratch using C++ and the W
 
 This project is currently unlicensed
 
-If your reading this, I built using the -g flag. If you really want to unbuild the exe, that'll help you.
+If your reading this, I built using the -g flag. (You can tell from installation step 3) If you really want to unbuild the exe, that'll help you.
