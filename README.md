@@ -29,7 +29,7 @@ Simply download the latest release, alternatively if you want to build it yourse
 
 2. Open **MSYS2** (or CMD/Powershell if its setup in PATH) and navigate to the project directory.
 
-3. Build the executable by running the following commands:
+3. Build the executable by running the following command:
     ```bash
     windres resource.rc -o resource.o
     g++ main.cpp resource.o -o notepad.exe -mwindows -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -lshlwapi -static-libgcc -static-libstdc++
