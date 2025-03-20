@@ -1,4 +1,4 @@
-// v1.2.4
+// v1.3.0
 #include <windows.h>
 #include <commdlg.h>
 #include <fstream>
@@ -10,10 +10,12 @@ const wchar_t* CLASS_NAME = L"Notepad";
 HWND hwndEdit;
 WNDPROC originalEditProc;
 std::wstring currentFileName = L"Untitled";
+std::wstring currentFilePath = L"";
 bool isModified = false;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+void SaveFileAs(HWND hwnd, HWND hwndEdit);
 
 std::wstring StringToWString(const std::string& str) {
     return std::wstring(str.begin(), str.end());
@@ -26,7 +28,7 @@ void UpdateWindowTitle(HWND hwnd) {
 
 void OpenFile(HWND hwnd) {
     OPENFILENAMEW ofn;
-    wchar_t szFile[260] = { 0 };
+    wchar_t szFile[260] = {0};
 
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
@@ -43,12 +45,14 @@ void OpenFile(HWND hwnd) {
     if (GetOpenFileNameW(&ofn)) {
         std::ifstream file(ofn.lpstrFile, std::ios::binary);
         if (file.is_open()) {
-            std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+            std::string content((std::istreambuf_iterator<char>(file)),
+                                std::istreambuf_iterator<char>());
             file.close();
 
             std::wstring wContent = StringToWString(content);
             SetWindowTextW(hwndEdit, wContent.c_str());
 
+            currentFilePath = ofn.lpstrFile;
             currentFileName = PathFindFileNameW(ofn.lpstrFile);
             isModified = false;
             UpdateWindowTitle(hwnd);
@@ -62,8 +66,26 @@ void OpenFile(HWND hwnd) {
 }
 
 void SaveFile(HWND hwnd, HWND hwndEdit) {
+    if (!currentFilePath.empty()) {
+        int len = GetWindowTextLengthW(hwndEdit) + 1;
+        wchar_t* buffer = new wchar_t[len];
+        GetWindowTextW(hwndEdit, buffer, len);
+        std::wofstream file(currentFilePath.c_str());
+        if (file.is_open()) {
+            file.write(buffer, len - 1);
+            file.close();
+            isModified = false;
+            UpdateWindowTitle(hwnd);
+        }
+        delete[] buffer;
+    } else {
+        SaveFileAs(hwnd, hwndEdit);
+    }
+}
+
+void SaveFileAs(HWND hwnd, HWND hwndEdit) {
     OPENFILENAMEW ofn;
-    wchar_t szFile[260] = { 0 };
+    wchar_t szFile[260] = {0};
 
     wcscpy_s(szFile, L"*.txt");
 
@@ -88,12 +110,12 @@ void SaveFile(HWND hwnd, HWND hwndEdit) {
         int len = GetWindowTextLengthW(hwndEdit) + 1;
         wchar_t* buffer = new wchar_t[len];
         GetWindowTextW(hwndEdit, buffer, len);
-
         std::wofstream file(filePath.c_str());
         if (file.is_open()) {
             file.write(buffer, len - 1);
             file.close();
 
+            currentFilePath = filePath;
             currentFileName = PathFindFileNameW(filePath.c_str());
             isModified = false;
             UpdateWindowTitle(hwnd);
@@ -104,7 +126,9 @@ void SaveFile(HWND hwnd, HWND hwndEdit) {
 
 void CheckUnsavedChanges(HWND hwnd) {
     if (isModified) {
-        int result = MessageBoxW(hwnd, L"You have unsaved changes. Do you want to save them?", L"Warning", MB_YESNOCANCEL | MB_ICONWARNING);
+        int result = MessageBoxW(hwnd, 
+            L"You have unsaved changes. Do you want to save them?",
+            L"Unsaved Changes", MB_YESNOCANCEL | MB_ICONWARNING);
         if (result == IDYES) {
             SaveFile(hwnd, hwndEdit);
         } else if (result == IDCANCEL) {
@@ -113,14 +137,27 @@ void CheckUnsavedChanges(HWND hwnd) {
     }
 }
 
+LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    if (uMsg == WM_KEYDOWN) {
+        if (GetAsyncKeyState(VK_CONTROL) & 0x8000) {
+            if (wParam == 'A') {
+                SendMessage(hwnd, EM_SETSEL, 0, -1);
+                return 0;
+            }
+        }
+    } else if (uMsg == WM_CHAR || uMsg == WM_PASTE) {
+        isModified = true;
+        UpdateWindowTitle(GetParent(hwnd));
+    }
+    return CallWindowProc(originalEditProc, hwnd, uMsg, wParam, lParam);
+}
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     WNDCLASSW wc = {};
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
-
     wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APP_ICON));
-
     RegisterClassW(&wc);
 
     HWND hwnd = CreateWindowExW(
@@ -134,20 +171,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         hInstance,
         NULL
     );
-
-    if (hwnd == NULL) {
+    if (hwnd == NULL)
         return 0;
-    }
+
+    ACCEL accel[] = {
+        { FVIRTKEY | FCONTROL, 'S', 3 },
+        { FVIRTKEY | FCONTROL | FSHIFT, 'S', 9 }
+    };
+    HACCEL hAccel = CreateAcceleratorTable(accel, 2);
 
     ShowWindow(hwnd, nCmdShow);
     UpdateWindowTitle(hwnd);
 
     MSG msg = {};
     while (GetMessage(&msg, NULL, 0, 0)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        if (!TranslateAccelerator(hwnd, hAccel, &msg)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
     }
 
+    DestroyAcceleratorTable(hAccel);
     return 0;
 }
 
@@ -161,6 +205,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             AppendMenuW(hFileMenu, MF_STRING, 1, L"New");
             AppendMenuW(hFileMenu, MF_STRING, 2, L"Open");
             AppendMenuW(hFileMenu, MF_STRING, 3, L"Save");
+            AppendMenuW(hFileMenu, MF_STRING, 9, L"Save As");
             AppendMenuW(hFileMenu, MF_SEPARATOR, 0, NULL);
             AppendMenuW(hFileMenu, MF_STRING, 4, L"Exit");
 
@@ -171,7 +216,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
             AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hFileMenu, L"File");
             AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hEditMenu, L"Edit");
-
             SetMenu(hwnd, hMenu);
 
             hwndEdit = CreateWindowExW(
@@ -182,12 +226,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             );
 
             HFONT hFont = CreateFontW(
-                -MulDiv(11, GetDeviceCaps(GetDC(hwnd), LOGPIXELSY), 72), 0, 0, 0, FW_NORMAL, 
-                FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, 
-                CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_MODERN | FIXED_PITCH, L"Consolas"
+                -MulDiv(11, GetDeviceCaps(GetDC(hwnd), LOGPIXELSY), 72),
+                0, 0, 0, FW_NORMAL,
+                FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                DEFAULT_QUALITY, FF_MODERN | FIXED_PITCH, L"Consolas"
             );
             SendMessage(hwndEdit, WM_SETFONT, (WPARAM)hFont, TRUE);
-
             originalEditProc = (WNDPROC)SetWindowLongPtr(hwndEdit, GWLP_WNDPROC, (LONG_PTR)EditProc);
         }
         break;
@@ -205,6 +250,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     CheckUnsavedChanges(hwnd);
                     SetWindowTextW(hwndEdit, L"");
                     currentFileName = L"Untitled";
+                    currentFilePath = L"";
                     isModified = false;
                     UpdateWindowTitle(hwnd);
                     break;
@@ -214,6 +260,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     break;
                 case 3: // Save
                     SaveFile(hwnd, hwndEdit);
+                    break;
+                case 9: // Save As
+                    SaveFileAs(hwnd, hwndEdit);
                     break;
                 case 4: // Exit
                     CheckUnsavedChanges(hwnd);
@@ -235,28 +284,24 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         }
         break;
 
+        case WM_CLOSE: {
+            if (isModified) {
+                int result = MessageBoxW(hwnd, 
+                    L"You have unsaved changes. Do you want to save them before exiting?",
+                    L"Unsaved Changes", MB_YESNOCANCEL | MB_ICONWARNING);
+                if (result == IDCANCEL)
+                    return 0;
+                if (result == IDYES)
+                    SaveFile(hwnd, hwndEdit);
+            }
+            DestroyWindow(hwnd);
+            return 0;
+        }
+        break;
+
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;
     }
     return DefWindowProcW(hwnd, uMsg, wParam, lParam);
-}
-
-LRESULT CALLBACK EditProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    if (uMsg == WM_KEYDOWN) {
-        if (GetKeyState(VK_CONTROL) & 0x8000) {
-            switch (wParam) {
-                case 'A':
-                    SendMessage(hwnd, EM_SETSEL, 0, -1);
-                    return 0;
-                case 'S':
-                    SaveFile(GetParent(hwnd), hwnd);
-                    return 0;
-            }
-        }
-    } else if (uMsg == WM_CHAR || uMsg == WM_PASTE) {
-        isModified = true;
-        UpdateWindowTitle(GetParent(hwnd));
-    }
-    return CallWindowProc(originalEditProc, hwnd, uMsg, wParam, lParam);
 }
