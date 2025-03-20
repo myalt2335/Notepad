@@ -1,0 +1,9 @@
+v1.0.0: Initial release, simple text editor with basic editing tools and I/O.
+v1.1.0: Improved editing tools, enhanced I/O.
+v1.2.0: Added keybinds for commands.
+v1.2.1: Changed font, added icon.
+v1.2.2: Fixed text loading error.
+v1.2.3: Added filename to app title.
+v1.2.4: Added unsaved indicator (*) and support for Ctrl+S.
+###### Cutoff for whatever I've been doing, swapped to semantic versioning. ######
+v1.3.0: Adjusted save behavior (Ctrl+S for direct save, Ctrl+Shift+S for Save As), added unsaved changes prompt on exit.
