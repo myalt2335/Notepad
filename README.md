@@ -1,7 +1,6 @@
+# Notepad
 
-# Notepad Clone
-
-This is a simple Notepad clone built from scratch using C++ and the Windows API (`windows.h`). 
+This is a Notepad clone built from scratch using C++ and the Windows API (`windows.h`). 
 
 This project was built using **VS Code** and **MSYS2** as the build environment.
 
@@ -11,14 +10,14 @@ This project was built using **VS Code** and **MSYS2** as the build environment.
 
 ## Getting Started
 
+### Installation
+
+Simply download the latest release. Alternatively if you want to build it yourself:
+
 ### Prerequisites
 - **MSYS2** installed
 - **GCC** (g++) compiler
 - **VS Code** for development (optional)
-
-### Installation
-
-Simply download the latest release, alternatively if you want to build it yourself:
 
 ### Building it
 
@@ -32,7 +31,7 @@ Simply download the latest release, alternatively if you want to build it yourse
 3. Build the executable by running the following command:
     ```bash
     windres resource.rc -o resource.o
-    g++ main.cpp resource.o -o notepad.exe -mwindows -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -lshlwapi -static-libgcc -static-libstdc++
+    g++ main.cpp resource.o -o notepad.exe -mwindows -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -lshlwapi -static
     ```
 
 4. After building, the application will be created and you can simply run the executable by clicking on it.
