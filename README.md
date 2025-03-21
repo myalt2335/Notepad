@@ -12,7 +12,9 @@ This project was built using **VS Code** and **MSYS2** as the build environment.
 
 ### Installation
 
-Simply download the latest release. Alternatively if you want to build it yourself:
+Simply download the latest release. 
+
+Alternatively if you want to build it yourself:
 
 ### Prerequisites
 - **MSYS2** installed
