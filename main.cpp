@@ -1,4 +1,4 @@
-// v1.3.0
+// v1.3.1
 #include <windows.h>
 #include <commdlg.h>
 #include <fstream>
@@ -25,7 +25,6 @@ void UpdateWindowTitle(HWND hwnd) {
     std::wstring title = (isModified ? L"*" : L"") + currentFileName + L" - Notepad";
     SetWindowTextW(hwnd, title.c_str());
 }
-
 void OpenFile(HWND hwnd) {
     OPENFILENAMEW ofn;
     wchar_t szFile[260] = {0};
@@ -35,8 +34,14 @@ void OpenFile(HWND hwnd) {
     ofn.hwndOwner = hwnd;
     ofn.lpstrFile = szFile;
     ofn.nMaxFile = sizeof(szFile) / sizeof(wchar_t);
-    ofn.lpstrFilter = L"Text Files\0*.TXT\0All Files\0*.*\0";
+
+    ofn.lpstrFilter = 
+        L"Text Files (*.TXT;*.MD;*.CSV;*.LOG;*.RTF;*.XML;*.JSON;*.PY;*.CPP;*.H;*.INI;*.BAT;*.CMD;*.SH;*.CSS;*.JS;*.HTML;*.PHP;*.JAVA;*.SQL;*.RB;*.PL;*.YAML;*.TOML;*.CONF;*.CFG;*.REG;*.VBS)\0"
+        L"*.TXT;*.MD;*.CSV;*.LOG;*.RTF;*.XML;*.JSON;*.PY;*.CPP;*.H;*.INI;*.BAT;*.CMD;*.SH;*.CSS;*.JS;*.HTML;*.PHP;*.JAVA;*.SQL;*.RB;*.PL;*.YAML;*.TOML;*.CONF;*.CFG;*.REG;*.VBS\0"
+        L"All Files (*.*)\0*.*\0";
+    
     ofn.nFilterIndex = 1;
+
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
     ofn.lpstrInitialDir = NULL;
