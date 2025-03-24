@@ -1,4 +1,4 @@
-// v1.3.1
+// v1.3.2
 #include <windows.h>
 #include <commdlg.h>
 #include <fstream>
@@ -180,10 +180,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         return 0;
 
     ACCEL accel[] = {
+        { FVIRTKEY | FCONTROL, 'N', 1 },
         { FVIRTKEY | FCONTROL, 'S', 3 },
         { FVIRTKEY | FCONTROL | FSHIFT, 'S', 9 }
     };
-    HACCEL hAccel = CreateAcceleratorTable(accel, 2);
+    HACCEL hAccel = CreateAcceleratorTable(accel, 3);
 
     ShowWindow(hwnd, nCmdShow);
     UpdateWindowTitle(hwnd);
