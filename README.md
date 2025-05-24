@@ -28,7 +28,7 @@ Alternatively if you want to build it yourself:
     git clone https://github.com/myalt2335/Notepad.git
     ```
 
-2. Open **MSYS2** (or Powershell if its setup in PATH) and navigate to the project directory.
+2. Open **MSYS2** (or Powershell if G++ is setup in PATH) and navigate to the project directory.
 
 3. Build the executable by running the following command:
     ```bash
